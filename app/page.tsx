@@ -1,101 +1,130 @@
-import Image from "next/image";
+"use client";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, onSnapshot, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+
+type Task = {
+  id: string;
+  title: string;
+  text: string;
+  date: string;
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [title, setTitle] = useState<string>("");
+  const [text, setText] = useState<string>("");
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [editTextId, setEditTextId] = useState<string | null>(null);
+  const [editText, setEditText] = useState<string>("")
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  // Função para criar nova task
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, "tasks"), {
+        title,
+        text,
+        date: new Date().toISOString(), // Salvar data como string ISO
+      });
+      setTitle("");
+      setText("");
+    } catch (error) {
+      console.error("Erro ao criar task:", error);
+    }
+  };
+
+  const handleDelete = async (taskId : string) => {
+    try{
+      const taskRef = doc(db, "tasks", taskId);
+      await deleteDoc(taskRef)
+      
+    }catch(error){
+      console.log(error)
+    } 
+  }
+
+  const handleEdit = (task : Task) => {
+    setEditTextId(task.id);
+    setEditText(task.text);
+  }
+
+
+
+  const handleSaveEdit = async (taskId : string, newText : string) => {
+    try{
+      const taskRef = doc(db, "tasks", taskId)
+      await updateDoc(taskRef, {text : newText})
+      setEditTextId(null)
+    }
+    catch(error) {
+      console.log(error)
+    }
+  }
+  // useEffect para buscar tasks em tempo real
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "tasks"), (snapshot) => {
+      const tasksList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Task[];
+
+      setTasks(tasksList);
+    });
+
+    // Limpar listener ao desmontar o componente
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <main>
+      <form onSubmit={handleCreate}>
+        <input
+          type="text"
+          placeholder="Título"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Texto"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button type="submit">Criar</button>
+      </form>
+      <section>
+        <h1>Tasks</h1>
+        {tasks.length > 0 ? (
+          <ul>
+            {tasks.map((task) => (
+              <li key={task.id}>
+                {editTextId === task.id ? (
+                  <>
+                  <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} />
+                  <button onClick={() => handleSaveEdit(editTextId!, editText)}>salvar</button>
+                  <button onClick={() => setEditTextId(null)}>Cancelar</button>
+                  </>
+                ) : <>
+
+<h2>{task.title}</h2>
+                <p>{task.text}</p>
+                <small>
+                  {new Date(task.date).toLocaleString("pt-BR", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </small>
+                <button onClick={() => handleEdit(task)}>Edit</button>
+                <button onClick={() => handleDelete(task.id)}>Delete</button>
+                
+                    </>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Nenhuma task encontrada.</p>
+        )}
+      </section>
+    </main>
   );
 }
