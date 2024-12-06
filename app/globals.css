@@ -1,7 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 :root{
-    --red : rgb(180, 19, 19);    
+    --text-principal : #212121;
+    --text-secondary: #757575;
+    --font-principal: "Inter", sans-serif;
+    --font-title : "Montserrat", sans-serif;
+    --red-light : #f4433681;
+    --red-medium : #F44336;
+    --orange-light: #ff990071;
+    --orange-medium : #FF9800;
 }
+.principal{
+    color: var(--text-principal);
+}
+.secondary{
+    color: var(--text-secondary);
+}
+.red-button{
+    background-color: var(--red-light);
+    font-family: var(--text-secondary);
+}
+.orange-button{
+    background-color: var(--orange-light);
+    font-family: var(--text-secondary);
+}  

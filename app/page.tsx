@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Card} from "@/components/ui/card";
  
 
 
@@ -96,75 +97,81 @@ export default function Home() {
   console.log(time)
 
   return (
-    <main className="flex flex-col items-start">
-      <form onSubmit={handleCreate}>
-        <Input
-          type="text"
-          placeholder="Título"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <Input
-          type="text"
-          placeholder="Texto"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-        >
-          <CalendarIcon />
-          {taskDate ? format(taskDate , "PPP") : <span>Pick a date</span>}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={taskDate}
-          onSelect={setTaskDate}
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
-    <Input type="time" value={time} onChange={(e) => setTime(e.target.value)}/>
-        <Button type="submit" variant="outline">Criar</Button>
-      </form>
-      <h1>Tasks</h1>
-      {tasks === null ? <Loader2 className="animate-spin"/> : 
-              <section>
-              {tasks.length > 0 ? (
-                <ul>
-                  {tasks.map((task) => (
-                    <li key={task.id}>
-                      {editTextId === task.id ? (
-                        <>
-                        <Input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} />
-                        <Button onClick={() => handleSaveEdit(editTextId!, editText)}>salvar</Button>
-                        <Button onClick={() => setEditTextId(null)}>Cancelar</Button>
-                        </>
-                      ) : 
-                      <>
-                      <h2>{task.title}</h2>
-                      <p>{task.text}</p>
-                      <small>
-                        {new Date(task.taskDate).toLocaleString("pt-BR", {
-                          dateStyle: "short"
-                        })}
-                      </small>
-                      <small>{task.time}</small>
-                      <Button onClick={() => handleEdit(task)}>Edit</Button>
-                      <Button variant="destructive" onClick={() => handleDelete(task.id)}>Delete</Button>
-                      </>}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>Nenhuma task encontrada.</p>
-              )}
-            </section>
-      }
+    <main className="flex">
+        <form onSubmit={handleCreate}>
+                <Input
+                  type="text"
+                  placeholder="Título"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <Input
+                  type="text"
+                  placeholder="Texto"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                />
+                <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                >
+                  <CalendarIcon />
+                  {taskDate ? format(taskDate , "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={taskDate}
+                  onSelect={setTaskDate}
+                  
+                />
+              </PopoverContent>
+            </Popover>
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)}/>
+                <Button type="submit" variant="outline">Criar</Button>
+        </form>
+      <Card> 
+        <h1 className="principal">Tarefas</h1>
+        {tasks === null ? <Loader2 className="animate-spin"/> : 
+                <section >
+                {tasks.length > 0 ? (
+                  <ul>
+                    {tasks.map((task) => (
+                      <li key={task.id}>
+                        {editTextId === task.id ? (
+                          <>
+                          <Input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} />
+                          <Button onClick={() => handleSaveEdit(editTextId!, editText)}>Salvar</Button>
+                          <Button onClick={() => setEditTextId(null)}>Cancelar</Button>
+                          </>
+                        ) : 
+                        <Card className="flex flex-col gap-2">
+                         <section className="flex flex-row items-baseline justify-between gap-5">
+                            <h1 className="principal text-xl">
+                              {new Date(task.taskDate).toLocaleString("pt-BR", {
+                                dateStyle: "short"
+                              })}
+                            </h1>
+                            <h2 className="text-2xl">{task.time}</h2>
+                          </section> 
+                        <h2 className="principal text-[var(--font-title)] text-xl">{task.title}</h2>
+                        <p className="secondary text-[var(--font-principal)] ">{task.text}</p>
+                        <section>
+                          <Button variant="secondary" className="orange-button" onClick={() => handleEdit(task)}>Editar tarefa</Button>
+                          <Button variant="destructive" className="red-button" onClick={() => handleDelete(task.id)}>Deletar tarefa</Button>
+                        </section>
+                        </Card>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>Nenhuma task encontrada.</p>
+                )}
+              </section>
+        }
+      </Card>   
     </main>
   );
 }
