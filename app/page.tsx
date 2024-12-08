@@ -211,6 +211,7 @@ export default function Home() {
                       type="time"
                       value={editTime}
                       onChange={(e) => setEditTime(e.target.value)}
+                      className="flex items-center justify-center"
                     />
                     <div className="flex justify-end gap-3">
                       <Button variant="default" onClick={handleSaveEdit}>
