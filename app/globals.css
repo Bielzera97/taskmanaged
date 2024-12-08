@@ -1,7 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Parkinsans:wght@300..800&display=swap');
+
 :root{
     --text-principal : #212121;
     --text-secondary: #757575;
@@ -9,16 +10,26 @@
     --font-title : "Montserrat", sans-serif;
     --red-light : #f4433681;
     --red-medium : #F44336;
-    --orange-light: #ff990071;
-    --orange-medium : #FF9800;
-    --green-medium : rgb(88, 209, 96);
-    --green-light : rgba(88, 209, 96, 0.4);
+    --orange-light: #ffc1076b;
+    --orange-medium : #FFC107;
+    --green-medium : #4CAF50;
+    --green-light : #4caf4f62;
+    --background-color: #F9F9F9;
+    --background-card: #FFFFFF;
+    --time-color: #3F51B5 ;
+    background-color: var(--background-color);
+}
+.card{
+    background-color: var(--background-card);
 }
 .principal{
     color: var(--text-principal);
 }
 .secondary{
     color: var(--text-secondary);
+}
+.time{
+    color: var(--time-color);
 }
 .red-button{
     background-color: var(--red-light);
@@ -31,4 +42,7 @@
 .green-button{
     background-color:var(--green-light) ;
     font-family: var(--text-secondary);
+}
+.titulo{
+    font-family: "Parkinsans", sans-serif;
 }
