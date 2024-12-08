@@ -11,6 +11,8 @@
     --red-medium : #F44336;
     --orange-light: #ff990071;
     --orange-medium : #FF9800;
+    --green-medium : rgb(88, 209, 96);
+    --green-light : rgba(88, 209, 96, 0.4);
 }
 .principal{
     color: var(--text-principal);
@@ -26,3 +28,7 @@
     background-color: var(--orange-light);
     font-family: var(--text-secondary);
 }  
+.green-button{
+    background-color:var(--green-light) ;
+    font-family: var(--text-secondary);
+}

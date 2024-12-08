@@ -20,7 +20,7 @@ type Task = {
   id: string;
   title: string;
   text: string;
-  taskDate: string;
+  taskDate: Date;
   time: string
 };
 
@@ -31,6 +31,9 @@ export default function Home() {
   const [taskDate, setTaskDate] = useState<Date | undefined>(new Date())
   const [editTextId, setEditTextId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>("")
+  const [editTitle, setEditTitle] = useState<string>("")
+  const [editTaskDate, setEditTaskDate] = useState<Date | undefined>(new Date())
+  const [editTime, setEditTime] = useState<string>("")
   const [time, setTime] = useState("")
 
   // Função para criar nova task
@@ -65,14 +68,22 @@ export default function Home() {
   const handleEdit = (task : Task) => {
     setEditTextId(task.id);
     setEditText(task.text);
+    setEditTaskDate(new Date(task.taskDate));
+    setEditTime(task.time)
+    setEditTitle(task.title)
   }
 
 
 
-  const handleSaveEdit = async (taskId : string, newText : string) => {
+  const handleSaveEdit = async (taskId : string, newText : string, newTaskDate: Date | undefined, newTime: string, newTitle : string) => {
     try{
       const taskRef = doc(db, "tasks", taskId)
-      await updateDoc(taskRef, {text : newText})
+      await updateDoc(taskRef, {
+        text : newText,
+        taskDate : newTaskDate?.toISOString(),
+        time: newTime,
+        title: newTitle
+      })
       setEditTextId(null)
     }
     catch(error) {
@@ -84,7 +95,7 @@ export default function Home() {
     const unsubscribe = onSnapshot(collection(db, "tasks"), (snapshot) => {
       const tasksList = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data(),
+        ...doc.data(), 
       })) as Task[];
 
       setTasks(tasksList);
@@ -112,56 +123,83 @@ export default function Home() {
                   onChange={(e) => setText(e.target.value)}
                 />
                 <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                >
-                  <CalendarIcon />
-                  {taskDate ? format(taskDate , "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={taskDate}
-                  onSelect={setTaskDate}
-                  
-                />
-              </PopoverContent>
-            </Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                    >
+                      <CalendarIcon />
+                      {taskDate ? format(taskDate , "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={taskDate}
+                      onSelect={setTaskDate}
+                      
+                    />
+                  </PopoverContent>
+                </Popover>
             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)}/>
                 <Button type="submit" variant="outline">Criar</Button>
         </form>
-      <Card> 
+      <Card className="w-full h-screen m-5"> 
         <h1 className="principal">Tarefas</h1>
-        {tasks === null ? <Loader2 className="animate-spin"/> : 
+        {tasks === null ? <section className="flex items-center text-3xl"><Loader2 className="animate-spin "/></section> : 
                 <section >
                 {tasks.length > 0 ? (
                   <ul>
                     {tasks.map((task) => (
                       <li key={task.id}>
                         {editTextId === task.id ? (
-                          <>
+                          <Card className="flex flex-col gap-2 max-w-[300px] px-5">
+                            <Input
+                              type="text"
+                              placeholder="Título"
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                            />
                           <Input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} />
-                          <Button onClick={() => handleSaveEdit(editTextId!, editText)}>Salvar</Button>
-                          <Button onClick={() => setEditTextId(null)}>Cancelar</Button>
-                          </>
+                          <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)}/>
+                          <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                >
+                                  <CalendarIcon />
+                                  {editTaskDate ? format(editTaskDate , "PPP") : <span>Pick a date</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={editTaskDate}
+                                  onSelect={setEditTaskDate}
+                                  
+                                />
+                              </PopoverContent>
+                          </Popover>
+                          <section className="flex justify-center">
+                            <Button className="green-button hover:bg-[var(--green-medium)]" onClick={() => handleSaveEdit(editTextId!, editText, editTaskDate, editTime, editTitle)}>Salvar</Button>
+                            <Button className="red-button hover:bg-[var(--red-medium)]" onClick={() => setEditTextId(null)}>Cancelar</Button>
+                          </section>
+                          </Card>
                         ) : 
-                        <Card className="flex flex-col gap-2">
+                        <Card className="flex flex-col gap-2 max-w-[300px] px-5">
                          <section className="flex flex-row items-baseline justify-between gap-5">
                             <h1 className="principal text-xl">
-                              {new Date(task.taskDate).toLocaleString("pt-BR", {
-                                dateStyle: "short"
-                              })}
-                            </h1>
-                            <h2 className="text-2xl">{task.time}</h2>
-                          </section> 
-                        <h2 className="principal text-[var(--font-title)] text-xl">{task.title}</h2>
-                        <p className="secondary text-[var(--font-principal)] ">{task.text}</p>
-                        <section>
-                          <Button variant="secondary" className="orange-button" onClick={() => handleEdit(task)}>Editar tarefa</Button>
-                          <Button variant="destructive" className="red-button" onClick={() => handleDelete(task.id)}>Deletar tarefa</Button>
-                        </section>
+                                  {new Date(task.taskDate).toLocaleString("pt-BR", {
+                                    dateStyle: "short"
+                                  })}
+                                </h1>
+                                <h2 className="text-2xl">{task.time}</h2>
+                              </section> 
+                            <h2 className="principal text-[var(--font-title)] text-xl">{task.title}</h2>
+                            <p className="secondary text-[var(--font-principal)] ">{task.text}</p>
+                            <section className="flex items-center justify-center">
+                              <Button variant="secondary" className="orange-button" onClick={() => handleEdit(task)}>Editar tarefa</Button>
+                              <Button variant="destructive" className="red-button" onClick={() => handleDelete(task.id)}>Deletar tarefa</Button>
+                            </section>
                         </Card>}
                       </li>
                     ))}
