@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { format } from "date-fns";
 import {
-  Loader2,
+  LoaderCircle,
   CalendarIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -171,8 +171,8 @@ export default function Home() {
       {/* Lista de tarefas */}
       <section className="col-span-2 space-y-4 max-w-screen max-h-screen ">
         {tasks === null ? (
-          <div className="flex items-center justify-center">
-            <Loader2 className="animate-spin" />
+          <div className="flex items-center justify-center pt-20 ">
+            <LoaderCircle size="80px" strokeWidth="1.25px" className="animate-spin " />
           </div>
         ) : tasks.length > 0 ? (
           <ul className="grid grid-cols-2 gap-4">
