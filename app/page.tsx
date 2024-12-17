@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -11,19 +11,13 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { format } from "date-fns";
-import {
-  LoaderCircle,
-  CalendarIcon,
-} from "lucide-react";
+import { LoaderCircle, CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox"; // Para o sistema de completa
 
 type Task = {
   id: string;
@@ -31,6 +25,7 @@ type Task = {
   text: string;
   taskDate: string;
   time: string;
+  completed: boolean;
 };
 
 export default function Home() {
@@ -39,16 +34,9 @@ export default function Home() {
   const [time, setTime] = useState("");
   const [taskDate, setTaskDate] = useState<Date | undefined>(new Date());
   const [tasks, setTasks] = useState<Task[] | null>(null);
+  const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
 
-  const [editTaskId, setEditTaskId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editText, setEditText] = useState("");
-  const [editTime, setEditTime] = useState("");
-  const [editTaskDate, setEditTaskDate] = useState<Date | undefined>(
-    new Date()
-  );
-
-  // Função para criar uma nova tarefa
+  // Criar nova tarefa
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -63,6 +51,7 @@ export default function Home() {
         text,
         taskDate: taskDate.toISOString(),
         time,
+        completed: false,
       });
 
       setTitle("");
@@ -74,7 +63,16 @@ export default function Home() {
     }
   };
 
-  // Função para deletar tarefa
+  // Alternar status de completa/pendente
+  const toggleCompleted = async (taskId: string, completed: boolean) => {
+    try {
+      await updateDoc(doc(db, "tasks", taskId), { completed: !completed });
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+    }
+  };
+
+  // Deletar tarefa
   const handleDelete = async (taskId: string) => {
     try {
       await deleteDoc(doc(db, "tasks", taskId));
@@ -83,35 +81,7 @@ export default function Home() {
     }
   };
 
-  // Função para editar tarefa
-  const handleEdit = (task: Task) => {
-    setEditTaskId(task.id);
-    setEditTitle(task.title);
-    setEditText(task.text);
-    setEditTime(task.time);
-    setEditTaskDate(new Date(task.taskDate));
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editTitle || !editText || !editTaskDate || !editTime || !editTaskId) {
-      alert("Preencha todos os campos antes de salvar.");
-      return;
-    }
-
-    try {
-      await updateDoc(doc(db, "tasks", editTaskId), {
-        title: editTitle,
-        text: editText,
-        taskDate: editTaskDate.toISOString(),
-        time: editTime,
-      });
-
-      setEditTaskId(null);
-    } catch (error) {
-      console.error("Erro ao salvar edição:", error);
-    }
-  };
-
+  // Carregar tarefas
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "tasks"), (snapshot) => {
       const taskList = snapshot.docs.map((doc) => ({
@@ -125,22 +95,27 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
+  // Filtrar tarefas com useMemo
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    switch (filter) {
+      case "completed":
+        return tasks.filter((task) => task.completed);
+      case "pending":
+        return tasks.filter((task) => !task.completed);
+      default:
+        return tasks;
+    }
+  }, [tasks, filter]);
+
   return (
     <main className="grid grid-cols-3 gap-5 p-5 h-screen w-screen overflow-hidden">
-      {/* Formulário para criar tarefas */}
-      <Card className="col-span-1 flex flex-col items-center gap-4 p-5 card ">
+      {/* Formulário */}
+      <Card className="col-span-1 flex flex-col items-center gap-4 p-5">
         <h1 className="text-lg font-bold">Anote sua tarefa</h1>
         <form onSubmit={handleCreate} className="w-full flex flex-col gap-3">
-          <Input
-            placeholder="Título"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <Input
-            placeholder="Texto"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+          <Input placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input placeholder="Texto" value={text} onChange={(e) => setText(e.target.value)} />
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline">
@@ -149,11 +124,7 @@ export default function Home() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={taskDate}
-                onSelect={setTaskDate}
-              />
+              <Calendar mode="single" selected={taskDate} onSelect={setTaskDate} />
             </PopoverContent>
           </Popover>
           <Input
@@ -169,88 +140,58 @@ export default function Home() {
       </Card>
 
       {/* Lista de tarefas */}
-      <section className="col-span-2 space-y-4 max-w-screen max-h-screen ">
+      <section className="col-span-2 space-y-4 max-w-screen max-h-screen">
+        {/* Filtros */}
+        <div className="flex gap-4 justify-center mb-4">
+          <Button variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>
+            Todas
+          </Button>
+          <Button
+            variant={filter === "completed" ? "default" : "outline"}
+            onClick={() => setFilter("completed")}
+          >
+            Completas
+          </Button>
+          <Button
+            variant={filter === "pending" ? "default" : "outline"}
+            onClick={() => setFilter("pending")}
+          >
+            Pendentes
+          </Button>
+        </div>
+
         {tasks === null ? (
-          <div className="flex items-center justify-center pt-20 ">
-            <LoaderCircle size="80px" strokeWidth="1.25px" className="animate-spin " />
+          <div className="flex items-center justify-center pt-20">
+            <LoaderCircle size="80px" strokeWidth="1.25px" className="animate-spin" />
           </div>
-        ) : tasks.length > 0 ? (
+        ) : filteredTasks.length > 0 ? (
           <ul className="grid grid-cols-2 gap-4">
-            {tasks.map((task) => (
+            {filteredTasks.map((task) => (
               <li key={task.id}>
-                {editTaskId === task.id ? (
-                  <Card className="p-4 space-y-3 card">
-                    <Input
-                      placeholder="Título"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                    />
-                    <Input
-                      placeholder="Texto"
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                    />
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline">
-                          <CalendarIcon className="mr-2" />
-                          {editTaskDate
-                            ? format(editTaskDate, "PPP")
-                            : "Escolha uma data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={editTaskDate}
-                          onSelect={setEditTaskDate}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Input
-                      type="time"
-                      value={editTime}
-                      onChange={(e) => setEditTime(e.target.value)}
-                      className="flex items-center justify-center"
-                    />
-                    <div className="flex justify-end gap-3">
-                      <Button variant="default" onClick={handleSaveEdit}>
-                        Salvar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => setEditTaskId(null)}
-                      >
-                        Cancelar
-                      </Button>
+                <Card className="p-4 space-y-3 card">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={task.completed}
+                        onCheckedChange={() => toggleCompleted(task.id, task.completed)}
+                      />
+                      <h2 className={`text-lg font-bold ${task.completed ? "line-through" : ""}`}>
+                        {task.title}
+                      </h2>
                     </div>
-                  </Card>
-                ) : (
-                  <Card className="p-4 space-y-3 card">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-lg font-bold">{task.title}</h2>
-                      <p className="text-xl time">{task.time}</p>
-                    </div>
-                    <p>{task.text}</p>
-                    <p className="text-sm time">
-                      <span className="text-black">Data : </span>{new Date(task.taskDate).toLocaleDateString()}
-                    </p>
-                    <div className="flex justify-end gap-3">
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleEdit(task)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleDelete(task.id)}
-                      >
-                        Deletar
-                      </Button>
-                    </div>
-                  </Card>
-                )}
+                    <p className="text-xl">{task.time}</p>
+                  </div>
+                  <p>{task.text}</p>
+                  <p className="text-sm">
+                    <span className="text-black">Data: </span>
+                    {new Date(task.taskDate).toLocaleDateString()}
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <Button variant="destructive" onClick={() => handleDelete(task.id)}>
+                      Deletar
+                    </Button>
+                  </div>
+                </Card>
               </li>
             ))}
           </ul>
@@ -261,3 +202,4 @@ export default function Home() {
     </main>
   );
 }
+  
