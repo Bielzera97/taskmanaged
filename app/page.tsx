@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox"; // Para o sistema de completa
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Task = {
   id: string;
@@ -36,50 +36,53 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
 
-  // Criar nova tarefa
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Criar nova tarefa com useCallback
+  const handleCreate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    if (!title || !text || !taskDate || !time) {
-      alert("Preencha todos os campos!");
-      return;
-    }
+      if (!title || !text || !taskDate || !time) {
+        alert("Preencha todos os campos!");
+        return;
+      }
 
-    try {
-      await addDoc(collection(db, "tasks"), {
-        title,
-        text,
-        taskDate: taskDate.toISOString(),
-        time,
-        completed: false,
-      });
+      try {
+        await addDoc(collection(db, "tasks"), {
+          title,
+          text,
+          taskDate: taskDate.toISOString(),
+          time,
+          completed: false,
+        });
 
-      setTitle("");
-      setText("");
-      setTaskDate(new Date());
-      setTime("");
-    } catch (error) {
-      console.error("Erro ao criar tarefa:", error);
-    }
-  };
+        setTitle("");
+        setText("");
+        setTaskDate(new Date());
+        setTime("");
+      } catch (error) {
+        console.error("Erro ao criar tarefa:", error);
+      }
+    },
+    [title, text, taskDate, time] // Dependências
+  );
 
-  // Alternar status de completa/pendente
-  const toggleCompleted = async (taskId: string, completed: boolean) => {
+  // Alternar status com useCallback
+  const toggleCompleted = useCallback(async (taskId: string, completed: boolean) => {
     try {
       await updateDoc(doc(db, "tasks", taskId), { completed: !completed });
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
     }
-  };
+  }, []);
 
-  // Deletar tarefa
-  const handleDelete = async (taskId: string) => {
+  // Deletar tarefa com useCallback
+  const handleDelete = useCallback(async (taskId: string) => {
     try {
       await deleteDoc(doc(db, "tasks", taskId));
     } catch (error) {
       console.error("Erro ao deletar tarefa:", error);
     }
-  };
+  }, []);
 
   // Carregar tarefas
   useEffect(() => {
@@ -202,4 +205,3 @@ export default function Home() {
     </main>
   );
 }
-  
